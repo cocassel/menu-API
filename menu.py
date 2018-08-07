@@ -13,14 +13,14 @@ def connectToDB():
                                "port='5432' password='uHbUVNzUAjDS7CJmv7gmFTxz-_FuHbRX'")
         print("Connected")
     except:
-        print "I am unable to connect to the database"
+        print("I am unable to connect to the database")
     cur = con.cursor()
     return cur, con
 
 
 app= Flask(__name__)
 CORS(app)
-
+lock = Lock()
 
 def getMenuDishes():
     try:
@@ -317,8 +317,4 @@ def deleteUser():
     finally:
         print("DeleteUser has released the lock")
         lock.release()
-
-
-if __name__=="__main__":
-	lock =Lock()
-	app.run(threaded=True)
+	
