@@ -212,6 +212,14 @@ def deleteUserFromDB(user):
   finally:
     con.close()
 
+@app.route("/wakeup", methods=['GET'])
+def wakeup():
+    print("Waking up Heroku API")
+    try:
+        return jsonify({"Heroku": "Awake"}), 200
+    except:
+        print("Users could not be fetched")
+
 
 @app.route("/users", methods=['GET'])
 def users():
