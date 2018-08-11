@@ -6,6 +6,11 @@ import psycopg2
 from threading import Thread, Lock
 
 
+app= Flask(__name__)
+CORS(app)
+lock = Lock()
+
+
 def connectToDB():
     try:  # attempts to connect to the database
         con = psycopg2.connect("dbname='pxeebvqz' user='pxeebvqz' "
@@ -17,10 +22,6 @@ def connectToDB():
     cur = con.cursor()
     return cur, con
 
-
-app= Flask(__name__)
-CORS(app)
-lock = Lock()
 
 def getMenuDishes():
     try:
@@ -38,7 +39,7 @@ def getMenuDishes():
             for column in range(columnNames.__len__()):
                 key = columnNames[column][0]
                 value = str(menuTable[tuple][column])
-                if (value == "None"):
+                if value == "None":
                     value = ""
                 menuDict[key] = value
             menuDict["visible"]= "true"
@@ -67,7 +68,7 @@ def getDishTypes():
             for column in range(columnNames.__len__()):
                 key = columnNames[column][0]
                 value = str(table[tuple][column])
-                if (value == "None"):
+                if value == "None":
                     value = ""
                 tableDict[key] = value
             tableList.append(tableDict)
@@ -132,6 +133,26 @@ def getFlaggedDishes():
         return tableList
     except:
         print("Flagged dishes could not be retrieved from the database")
+    finally:
+        con.close()
+
+
+def authenticateUserFromDb(username, password):
+    try:
+        cur, con = connectToDB()
+        cur.execute("select * from public.user")
+        userTable = cur.fetchall()
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='user'")
+
+        for tuple in range(userTable.__len__()):
+            userTuple = userTable[tuple]
+            if userTuple[1] == username and userTuple[2] == password:
+                if userTuple[5] == True:
+                    return jsonify({"user": "authenticated", "id": userTuple[0]}), 200
+                return jsonify({"user": "authenticated", "id": "invalid"}), 200
+        return jsonify({"user": "denied"}), 200
+    except:
+        print("User could not be authenticated")
     finally:
         con.close()
 
@@ -212,6 +233,7 @@ def deleteUserFromDB(user):
   finally:
     con.close()
 
+
 @app.route("/wakeup", methods=['GET'])
 def wakeup():
     print("Waking up Heroku API")
@@ -221,26 +243,13 @@ def wakeup():
         print("Users could not be fetched")
 
 
-@app.route("/users", methods=['GET'])
-def users():
-    lock.acquire()
-    print("Calling users")
-    print("Users now has the lock")
-    try:
-        return jsonify(getUsers()), 200
-    except:
-        print("Users could not be fetched")
-    finally:
-        print("Users has released the lock")
-        lock.release()
-
-
 @app.route("/dishes", methods=['GET'])
 def dishes():
     lock.acquire()
     print("Calling menu")
     print("Menu now has the lock")
     try:
+        
         return jsonify(getMenuDishes()), 200
     except:
         print("Menu could not be fetched")
@@ -276,6 +285,7 @@ def flags():
         print("Flags has released the lock")
         lock.release()
 
+
 @app.route("/flaggedDishes", methods=['GET'])
 def flaggedDishes():
     lock.acquire()
@@ -287,6 +297,38 @@ def flaggedDishes():
         print("Flagged dishes could not be fetched")
     finally:
         print("Flagged dishes has released the lock")
+        lock.release()
+
+
+@app.route("/authenticateUser", methods=['POST'])
+def authenticateAdminUser():
+    lock.acquire()
+    print("Calling authenticateAdminUser")
+    print("authenticateAdminUser now has the lock")
+    try:
+        userToAuthenticate = request.json
+        username = str(userToAuthenticate["username"])
+        password = str(userToAuthenticate["password"])
+        return authenticateUserFromDb(username, password)
+    except Exception as e:
+        print(e.message)
+        print("Unable to authenticate user")
+    finally:
+        print("authenticateUser has released the lock")
+        lock.release()
+
+
+@app.route("/users", methods=['GET'])
+def users():
+    lock.acquire()
+    print("Calling users")
+    print("Users now has the lock")
+    try:
+        return jsonify(getUsers()), 200
+    except:
+        print("Users could not be fetched")
+    finally:
+        print("Users has released the lock")
         lock.release()
 
 
