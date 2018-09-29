@@ -187,7 +187,6 @@ def getUsers():
 
 def addUserToDB(userToAdd):
     try:
-        print(userToAdd)
         cur, con = connectToDB()
 
         getUserID = "select count(*) from public.user"
@@ -232,6 +231,63 @@ def deleteUserFromDB(user):
     print("Could not delete user from database")
   finally:
     con.close()
+
+
+def addFlagToDB(flagToAdd):
+    try:
+        cur, con = connectToDB()
+
+        getFlagID = "select count(*) from public.dietary_flag"
+        cur.execute(getFlagID)
+        newFlagID = cur.fetchall()[0][0]
+        newFlagID = newFlagID + 1
+
+        flag_name = str(flagToAdd["flag_name"])
+
+        insertStatement = "INSERT INTO public.dietary_flag(flag_id, flag_name) VALUES ('" + str(newFlagID) + "', '" + flag_name + "')"
+
+        cur.execute(insertStatement)
+        con.commit()
+        con.close()
+    except Exception as e:
+        print(e.message)
+        print("Could not add flag to the database")
+    finally:
+        con.close()
+
+
+def deleteFlagFromDB(flag):
+  try:
+    cur, con = connectToDB()
+    deleteStatement="DELETE FROM public.dietary_flag WHERE flag_id=" + str(flag)
+    updateStatement="UPDATE public.dietary_flag SET flag_id=flag_id-1 WHERE flag_id>" + str(flag)
+    print("Flag " + str(flag) + " has been deleted")
+    cur.execute(deleteStatement)
+    cur.execute(updateStatement)
+    con.commit()
+  except:
+    print("Could not delete flag from database")
+  finally:
+    con.close()
+
+
+def updateFlagInDB(flagToUpdate):
+    try:
+        cur, con = connectToDB()
+
+        flag_id = str(flagToUpdate['flag_id'])
+        flag_name = str(flagToUpdate['flag_name'])
+
+        updateStatement = "UPDATE public.dietary_flag SET flag_name='" + flag_name + "' WHERE flag_id=" + flag_id
+
+        cur.execute(updateStatement)
+        con.commit()
+        con.close()
+    except Exception as e:
+        print(e.message)
+        print("Could not update flag in the database")
+    finally:
+        con.close()
 
 
 @app.route("/wakeup", methods=['GET'])
@@ -348,6 +404,78 @@ def addUser():
     finally:
         print("AddUser has released the lock")
         lock.release()
+	
+
+@app.route("/addCategory", methods=['POST'])
+def addCategory():
+    lock.acquire()
+    print("Calling addCategory")
+    print("AddCategory now has the lock")
+    try:
+        categoryToAdd = request.json
+        addCategoryToDB(categoryToAdd)
+        return jsonify({"addCategory": "success"}), 200
+    except Exception as e:
+        print(e.message)
+        print("Could not add user")
+        return jsonify({"addCategory": "failed"})
+    finally:
+        print("AddCategory has released the lock")
+        lock.release()
+
+
+@app.route("/addDish", methods=['POST'])
+def addDish():
+    lock.acquire()
+    print("Calling addDish")
+    print("AddCategory now has the lock")
+    try:
+        categoryToAdd = request.json
+        addCategoryToDB(categoryToAdd)
+        return jsonify({"addCategory": "success"}), 200
+    except Exception as e:
+        print(e.message)
+        print("Could not add user")
+        return jsonify({"addCategory": "failed"})
+    finally:
+        print("AddCategory has released the lock")
+        lock.release()
+
+
+@app.route("/addFlag", methods=['POST'])
+def addFlag():
+    lock.acquire()
+    print("Calling addFlag")
+    print("AddFlag now has the lock")
+    try:
+        flagToAdd = request.json
+        addFlagToDB(flagToAdd)
+        return jsonify({"addFlag": "success"}), 200
+    except Exception as e:
+        print(e.message)
+        print("Could not add flag")
+        return jsonify({"addFlag": "failed"})
+    finally:
+        print("AddFlag has released the lock")
+        lock.release()
+
+
+@app.route("/deleteDish", methods=['POST'])
+def deleteDish():
+    lock.acquire()
+    print("Calling deleteDish")
+    print("DeleteDish now has the lock")
+    try:
+        dishToDelete = request.json
+        deleteDishFromDB(dishToDelete)
+        return jsonify({"deleteDish": "success"}), 200
+    except Exception as e:
+        print(e.message)
+        print("Could not delete dish")
+        return jsonify({"deleteDish": "failed"})
+    finally:
+        print("DeleteDish has released the lock")
+        lock.release()
 
 
 @app.route("/deleteUser", methods=['POST'])
@@ -367,4 +495,40 @@ def deleteUser():
     finally:
         print("DeleteUser has released the lock")
         lock.release()
-	
+
+
+@app.route("/deleteFlag", methods=['POST'])
+def deleteFlag():
+    lock.acquire()
+    print("Calling deleteFlag")
+    print("DeleteFlag now has the lock")
+    try:
+        data = request.json
+        flagToDelete = data['deleteFlag']
+        deleteFlagFromDB(flagToDelete)
+        return jsonify({"deleteFlag": "success"}), 200
+    except Exception as e:
+        print(e.message)
+        print("Could not delete flag")
+        return jsonify({"deleteFlag": "failed"})
+    finally:
+        print("DeleteFlag has released the lock")
+        lock.release()
+
+
+@app.route("/updateFlag", methods=['POST'])
+def updateFlag():
+    lock.acquire()
+    print("Calling updateFlag")
+    print("UpdateFlag now has the lock")
+    try:
+        flagToUpdate = request.json
+        updateFlagInDB(flagToUpdate)
+        return jsonify({"updateFlag": "success"}), 200
+    except Exception as e:
+        print(e.message)
+        print("Could not update flag")
+        return jsonify({"updateFlag": "failed"})
+    finally:
+        print("UpdateFlag has released the lock")
+        lock.release()
